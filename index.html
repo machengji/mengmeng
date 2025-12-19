@@ -682,31 +682,32 @@
       const content = input.value.trim();
       if (!content) return showToast("请输入文字内容");
 
-      // 核心修改：不再依赖屏幕中心，而是依赖“图片视口容器”的中心
-      // 1. 获取图片视口容器 (盒子1) 的边界
+      // 1. 获取容器和画布的几何信息
       const viewportRect = viewport.getBoundingClientRect();
-      
-      // 2. 计算视口的视觉中心点坐标 (屏幕坐标系)
-      const viewportCenterX = viewportRect.left + viewportRect.width / 2;
-      const viewportCenterY = viewportRect.top + viewportRect.height / 2;
-
-      // 3. 获取 Canvas 在页面中的实际位置
       const canvasRect = textCanvas.getBoundingClientRect();
 
-      // 4. 计算中心点相对于 Canvas 左上角的偏移 (CSS 像素)
-      // 如果图片很大需要滚动，这个偏移量会自动考虑滚动的距离
-      const domX = viewportCenterX - canvasRect.left;
-      const domY = viewportCenterY - canvasRect.top;
+      // 2. 计算可见的交集区域 (Visible Intersection)
+      // 这代表了“图片当前在视口中可见的那一部分”
+      const visibleLeft = Math.max(viewportRect.left, canvasRect.left);
+      const visibleTop = Math.max(viewportRect.top, canvasRect.top);
+      const visibleRight = Math.min(viewportRect.right, canvasRect.right);
+      const visibleBottom = Math.min(viewportRect.bottom, canvasRect.bottom);
 
-      // 5. 将 CSS 像素映射回 Canvas 内部的原始分辨率坐标
-      const rawX = domX * (baseImage.naturalWidth / canvasRect.width);
-      const rawY = domY * (baseImage.naturalHeight / canvasRect.height);
+      // 3. 取交集的中心点
+      const centerX = (visibleLeft + visibleRight) / 2;
+      const centerY = (visibleTop + visibleBottom) / 2;
 
-      // 6. 安全边界限制，防止文字飞出图片太远
-      const rawW = baseImage.naturalWidth;
-      const rawH = baseImage.naturalHeight;
-      const safeX = Math.max(rawW * 0.1, Math.min(rawW * 0.9, rawX));
-      const safeY = Math.max(rawH * 0.1, Math.min(rawH * 0.9, rawY));
+      // 4. 转换为相对于 Canvas 左上角的坐标
+      const cssX = centerX - canvasRect.left;
+      const cssY = centerY - canvasRect.top;
+
+      // 5. 映射到原始图片坐标系
+      const rawX = cssX * (baseImage.naturalWidth / canvasRect.width);
+      const rawY = cssY * (baseImage.naturalHeight / canvasRect.height);
+
+      // 6. 安全边界限制
+      const safeX = Math.max(0, Math.min(baseImage.naturalWidth, rawX));
+      const safeY = Math.max(0, Math.min(baseImage.naturalHeight, rawY));
 
       const newText = {
         id: Date.now(),
@@ -714,7 +715,7 @@
         x: safeX,
         y: safeY,
         color: PRESET_COLORS[0], // 默认白色
-        size: Math.max(50, rawW / 20),
+        size: Math.max(50, baseImage.naturalWidth / 20),
         font: 'Noto Sans SC'
       };
 
