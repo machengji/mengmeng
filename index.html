@@ -104,8 +104,13 @@
       overflow: auto; /* 内部滚动 */
       position: relative;
       display: flex;
-      align-items: center; /* 垂直居中 */
-      justify-content: center; /* 水平居中 */
+      /* 修复：移除 align-items 和 justify-content，改用 margin: auto 实现居中且防止溢出裁切 */
+      /* align-items: center; */
+      /* justify-content: center; */
+      
+      /* 添加内边距，确保顶部内容不被 Header 遮挡 */
+      padding: 6rem 1rem 2rem 1rem; 
+
       background-image:
         radial-gradient(#e5e7eb 1px, transparent 1px),
         radial-gradient(#e5e7eb 1px, transparent 1px);
@@ -250,7 +255,7 @@
   <!-- 盒子1：图片视口区域 -->
   <main id="image-viewport">
     <!-- 欢迎信息 -->
-    <div id="welcome-msg" class="text-center text-slate-400 animate-fade-in px-4">
+    <div id="welcome-msg" class="text-center text-slate-400 animate-fade-in px-4 m-auto">
       <div
         class="w-20 h-20 sm:w-24 sm:h-24 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
         <i data-lucide="image" class="w-8 h-8 sm:w-10 sm:h-10 text-slate-300"></i>
@@ -261,7 +266,7 @@
 
     <!-- 画布容器 (双层结构) -->
     <div id="canvas-container"
-      class="hidden shadow-2xl rounded-sm overflow-hidden transition-all duration-500 ease-out transform scale-95 opacity-0 relative"
+      class="hidden shadow-2xl rounded-sm overflow-hidden transition-all duration-500 ease-out transform scale-95 opacity-0 relative m-auto"
       style="font-kerning: normal; text-rendering: optimizeLegibility;">
       <!-- Layer 1: 背景层 -->
       <canvas id="bgCanvas" class="block w-full h-auto"></canvas>
