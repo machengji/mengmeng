@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>原画质加字神器</title>
+
+  <!-- 引入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- 引入 Google Fonts 中文字体 + 日系汉字通用字体 -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Long+Cang&family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;700&family=Noto+Serif+SC:wght@400;700&family=Reggae+One&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&family=Zhi+Mang+Xing&family=Liu+Jian+Mao+Cao&family=ZCOOL+XiaoWei&family=Yuji+Syuku&display=swap"
+    rel="stylesheet">
+
+  <!-- 引入霞鹜文楷 (LXGW WenKai Screen) -->
+  <link rel="stylesheet" href="https://npm.elemecdn.com/lxgw-wenkai-screen-web/style.css">
+
+  <!-- 引入 Lucide 图标库 -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* 字体定义 */
+    .font-noto-sans {
+      font-family: 'Noto Sans SC', sans-serif;
+    }
+
+    .font-noto-serif {
+      font-family: 'Noto Serif SC', serif;
+    }
+
+    .font-wenkai {
+      font-family: 'LXGW WenKai Screen', serif;
+    }
+
+    .font-kuai-le {
+      font-family: 'ZCOOL KuaiLe', cursive;
+    }
+
+    .font-ma-shan {
+      font-family: 'Ma Shan Zheng', cursive;
+    }
+
+    .font-long-cang {
+      font-family: 'Long Cang', cursive;
+    }
+
+    .font-qing-ke {
+      font-family: 'ZCOOL QingKe HuangYou', sans-serif;
+    }
+
+    .font-zhi-mang {
+      font-family: 'Zhi Mang Xing', cursive;
+    }
+
+    .font-liu-jian {
+      font-family: 'Liu Jian Mao Cao', cursive;
+    }
+
+    .font-xiao-wei {
+      font-family: 'ZCOOL XiaoWei', serif;
+    }
+
+    .font-pixel {
+      font-family: 'DotGothic16', sans-serif;
+    }
+
+    .font-reggae {
+      font-family: 'Reggae One', cursive;
+    }
+
+    .font-yuji {
+      font-family: 'Yuji Syuku', serif;
+    }
+
+    /* 全局滚动与触摸优化 */
+    html,
+    body {
+      overscroll-behavior: none;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      touch-action: none;
+      background-color: #f3f4f6;
+      font-family: 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* 重要修改：布局改为 Flex Column
+       上部分是视口，下部分是工具栏
+    */
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 盒子1：图片显示区域 */
+    #image-viewport {
+      flex: 1; /* 占据剩余空间 */
+      overflow: auto; /* 内部滚动 */
+      position: relative;
+      display: flex;
+      align-items: center; /* 垂直居中 */
+      justify-content: center; /* 水平居中 */
+      background-image:
+        radial-gradient(#e5e7eb 1px, transparent 1px),
+        radial-gradient(#e5e7eb 1px, transparent 1px);
+      background-size: 20px 20px;
+      background-position: 0 0, 10px 10px;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+    }
+
+    /* 横向滚动区域优化 */
+    .scroll-x-container {
+      touch-action: pan-x;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* 盒子2：底部工具栏样式 */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.98); /* 稍微不透明一点，区分明显 */
+      border-top: 1px solid rgba(229, 231, 235, 0.8);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+      padding-bottom: env(safe-area-inset-bottom);
+      z-index: 50;
+    }
+
+    /* 优化后的颜色色块样式 */
+    .color-swatch {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    .color-swatch:active {
+      transform: scale(0.9);
+    }
+
+    .color-swatch.active {
+      transform: scale(1.1);
+      box-shadow: 0 0 0 2px white, 0 0 0 4px #4f46e5;
+      z-index: 10;
+    }
+
+    /* 彩虹圆环背景 */
+    .rainbow-bg {
+      background: conic-gradient(red, orange, yellow, green, blue, indigo, violet, red);
+    }
+
+    /* 滑块美化 */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+      padding: 10px 0;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: #4f46e5;
+      cursor: pointer;
+      margin-top: -10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      border: 2px solid white;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 4px;
+      cursor: pointer;
+      background: #e5e7eb;
+      border-radius: 2px;
+    }
+
+    /* 数字输入框美化 */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    canvas {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+
+    /* 优化 DOM 预览层性能 */
+    #preview-text {
+      will-change: transform, font-size, top, left;
+    }
+
+    header {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 顶部导航 (悬浮在图片区域上方，不占据布局空间) -->
+  <header class="absolute top-0 left-0 right-0 z-50 px-4 pointer-events-none w-full">
+    <div class="flex justify-between items-start max-w-2xl mx-auto w-full">
+      <div class="pointer-events-auto flex flex-col gap-2">
+        <div class="bg-white/90 backdrop-blur shadow-sm rounded-full px-4 py-2 flex items-center gap-2">
+          <span class="text-xl">🎨</span>
+          <h1 class="font-bold text-sm tracking-wide text-slate-700 hidden sm:block">原画加字</h1>
+        </div>
+        <button id="loadBtn" onclick="loadProgress()"
+          class="hidden bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition flex items-center gap-1 border border-indigo-200">
+          <i data-lucide="rotate-ccw" class="w-3 h-3"></i> <span class="hidden sm:inline">恢复</span>
+        </button>
+      </div>
+
+      <div class="flex gap-2 pointer-events-auto">
+        <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(event)" class="hidden">
+
+        <button onclick="document.getElementById('fileInput').click()"
+          class="bg-white text-slate-700 p-2.5 sm:px-4 sm:py-2.5 rounded-full text-xs font-bold shadow-md active:scale-95 transition flex items-center gap-2 border border-slate-100">
+          <i data-lucide="image-plus" class="w-5 h-5 sm:w-4 sm:h-4"></i> <span class="hidden sm:inline">换图</span>
+        </button>
+
+        <button onclick="saveProgressManual()"
+          class="bg-white text-slate-700 p-2.5 sm:px-4 sm:py-2.5 rounded-full text-xs font-bold shadow-md active:scale-95 transition flex items-center gap-2 border border-slate-100">
+          <i data-lucide="save" class="w-5 h-5 sm:w-4 sm:h-4"></i> <span class="hidden sm:inline">存档</span>
+        </button>
+
+        <button onclick="exportImage()"
+          class="bg-indigo-600 text-white p-2.5 sm:px-5 sm:py-2.5 rounded-full text-xs font-bold shadow-lg shadow-indigo-200 active:bg-indigo-700 active:scale-95 transition flex items-center gap-2">
+          <i data-lucide="download" class="w-5 h-5 sm:w-4 sm:h-4"></i> <span class="hidden sm:inline">导出</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 盒子1：图片视口区域 -->
+  <main id="image-viewport">
+    <!-- 欢迎信息 -->
+    <div id="welcome-msg" class="text-center text-slate-400 animate-fade-in px-4">
+      <div
+        class="w-20 h-20 sm:w-24 sm:h-24 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+        <i data-lucide="image" class="w-8 h-8 sm:w-10 sm:h-10 text-slate-300"></i>
+      </div>
+      <p class="font-medium text-lg text-slate-600">点击右上角 图标 选图</p>
+      <p class="text-xs mt-2 text-slate-400">保持原画质 · 支持长图 · 自动存档</p>
+    </div>
+
+    <!-- 画布容器 (双层结构) -->
+    <div id="canvas-container"
+      class="hidden shadow-2xl rounded-sm overflow-hidden transition-all duration-500 ease-out transform scale-95 opacity-0 relative"
+      style="font-kerning: normal; text-rendering: optimizeLegibility;">
+      <!-- Layer 1: 背景层 -->
+      <canvas id="bgCanvas" class="block w-full h-auto"></canvas>
+      <!-- Layer 2: 交互层 -->
+      <canvas id="textLayer" class="absolute top-0 left-0 w-full h-full cursor-move z-10"></canvas>
+      <!-- Layer 3: 预览层 (DOM 代理) -->
+      <div id="preview-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-20 hidden">
+        <span id="preview-text" class="absolute whitespace-pre origin-center leading-none"
+          style="transform: translate(-50%, -50%);"></span>
+      </div>
+    </div>
+  </main>
+
+  <!-- 盒子2：底部控制区域 (不再覆盖图片) -->
+  <footer
+    class="shrink-0 glass-panel rounded-t-3xl shadow-[0_-5px_25px_rgba(0,0,0,0.05)] relative z-50"
+    id="controls">
+    <div class="max-w-md mx-auto w-full px-5 py-4 sm:pb-8">
+
+      <!-- 输入栏 -->
+      <div class="flex gap-3 mb-4 items-center">
+        <div class="relative flex-1">
+          <input type="text" id="textInput" placeholder="输入文字..."
+            class="w-full bg-slate-100 border-none rounded-full px-4 py-3 text-base focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner outline-none">
+        </div>
+        <button onclick="addText()"
+          class="bg-indigo-600 text-white w-12 h-12 rounded-full shadow-lg shadow-indigo-200 active:bg-indigo-700 transition active:scale-95 flex items-center justify-center shrink-0">
+          <i data-lucide="plus" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <!-- 工具区 -->
+      <div id="tools-area" class="space-y-4 transition-opacity duration-300">
+
+        <!-- 颜色预设列表 -->
+        <div>
+          <div class="flex items-center justify-between mb-2 px-1">
+            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">颜色选择</label>
+          </div>
+          <div id="color-presets"
+            class="flex overflow-x-auto gap-4 py-3 px-4 -mx-2 scrollbar-hide snap-x scroll-x-container items-center">
+
+            <!-- 自定义颜色入口 -->
+            <div
+              class="relative w-10 h-10 rounded-full rainbow-bg shadow-md ring-2 ring-white overflow-hidden shrink-0 snap-start active:scale-90 transition-transform color-swatch"
+              id="custom-color-btn">
+              <input type="color" id="colorPicker" value="#ffffff" onchange="changeColor(this.value)"
+                class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer">
+              <div class="absolute inset-2 bg-white/20 rounded-full pointer-events-none"></div>
+            </div>
+
+            <div class="w-px h-6 bg-slate-300 shrink-0"></div>
+            <!-- JS 生成 -->
+          </div>
+        </div>
+
+        <!-- 字体列表 -->
+        <div>
+          <div id="font-list"
+            class="flex overflow-x-auto gap-3 pb-2 -mx-1 px-1 scrollbar-hide snap-x scroll-x-container">
+            <button onclick="changeFont('Noto Sans SC', '黑体')"
+              class="snap-start font-noto-sans bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50 min-w-[4.5rem]">黑体</button>
+            <button onclick="changeFont('LXGW WenKai Screen', '霞鹜文楷')"
+              class="snap-start font-wenkai bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">霞鹜文楷</button>
+            <button onclick="changeFont('Noto Serif SC', '宋体')"
+              class="snap-start font-noto-serif bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">宋体</button>
+            <button onclick="changeFont('DotGothic16', '点阵体')"
+              class="snap-start font-pixel bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">像素点阵</button>
+            <button onclick="changeFont('Zhi Mang Xing', '行书')"
+              class="snap-start font-zhi-mang bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">志莽行书</button>
+            <button onclick="changeFont('Ma Shan Zheng', '毛笔')"
+              class="snap-start font-ma-shan bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">马善政</button>
+            <button onclick="changeFont('Liu Jian Mao Cao', '草书')"
+              class="snap-start font-liu-jian bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">流光毛草</button>
+            <button onclick="changeFont('ZCOOL XiaoWei', '小薇')"
+              class="snap-start font-xiao-wei bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">站酷小薇</button>
+            <button onclick="changeFont('Reggae One', '狮尾')"
+              class="snap-start font-reggae bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">狮尾重号</button>
+            <button onclick="changeFont('Long Cang', '龙由')"
+              class="snap-start font-long-cang bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">龙由书</button>
+            <button onclick="changeFont('ZCOOL KuaiLe', '快乐')"
+              class="snap-start font-kuai-le bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">快乐体</button>
+            <button onclick="changeFont('ZCOOL QingKe HuangYou', '黄油')"
+              class="snap-start font-qing-ke bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">黄油体</button>
+            <button onclick="changeFont('Yuji Syuku', '日系')"
+              class="snap-start font-yuji bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">日系书体</button>
+          </div>
+        </div>
+
+        <!-- 大小控制 -->
+        <div class="bg-white/50 p-3 rounded-2xl border border-slate-100">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">字号大小</label>
+            <div class="flex items-center bg-white rounded-lg border border-slate-200 px-2 py-1 shadow-sm">
+              <input type="number" id="sizeInput" value="100" min="10" max="600" onchange="changeSize(this.value)"
+                onkeydown="if(event.key === 'Enter') changeSize(this.value)"
+                class="w-12 text-center text-sm font-mono text-indigo-600 outline-none bg-transparent m-0 p-0 font-bold">
+              <span class="text-xs text-slate-400 ml-1">px</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <i data-lucide="type" class="w-3 h-3 text-slate-400"></i>
+            <input type="range" min="20" max="600" value="100" id="sizeSlider" oninput="handleSizeInput(this.value)"
+              onchange="handleSizeChange(this.value)" class="flex-1">
+            <i data-lucide="type" class="w-5 h-5 text-slate-400"></i>
+          </div>
+        </div>
+      </div>
+
+      <button id="deleteBtn" onclick="deleteSelectedText()"
+        class="hidden absolute -top-12 right-4 bg-white text-red-500 px-4 py-2 rounded-full text-sm font-bold shadow-lg border border-red-100 active:scale-90 transition flex items-center gap-1.5">
+        <i data-lucide="trash-2" class="w-4 h-4"></i> 删除
+      </button>
+    </div>
+  </footer>
+
+  <!-- Loading -->
+  <div id="loading-overlay"
+    class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex flex-col items-center justify-center text-white animate-fade-in">
+    <div class="bg-black/30 p-6 rounded-2xl flex flex-col items-center">
+      <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-3 text-indigo-400"></i>
+      <p class="font-medium text-lg">正在生成...</p>
+      <p class="text-xs text-slate-300 mt-2">保持原画质导出中</p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"
+    class="fixed top-24 left-1/2 transform -translate-x-1/2 bg-slate-800/90 text-white px-4 py-2 rounded-full text-sm shadow-xl backdrop-blur transition-all duration-300 opacity-0 translate-y-4 pointer-events-none z-[70] flex items-center gap-2 max-w-[80%] truncate">
+    <i data-lucide="info" class="w-4 h-4 text-indigo-300 shrink-0"></i>
+    <span id="toast-msg" class="truncate">提示信息</span>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    /* --- 变量 --- */
+    const bgCanvas = document.getElementById('bgCanvas');
+    const textCanvas = document.getElementById('textLayer');
+    const bgCtx = bgCanvas.getContext('2d');
+    const textCtx = textCanvas.getContext('2d');
+
+    const previewLayer = document.getElementById('preview-layer');
+    const previewText = document.getElementById('preview-text');
+
+    const viewport = document.getElementById('image-viewport');
+    const container = document.getElementById('canvas-container');
+    const welcomeMsg = document.getElementById('welcome-msg');
+    const loadBtn = document.getElementById('loadBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+
+    // 状态
+    let baseImage = new Image();
+    let texts = [];
+    let selectedTextId = null;
+    let isDragging = false;
+    let dragStartOffset = { x: 0, y: 0 };
+    let imageLoaded = false;
+
+    // 渲染状态
+    let isDirty = false;
+    let animationFrameId = null;
+    const MAX_CANVAS_SIZE = 4096;
+    let renderScale = 1;
+
+    let cachedRect = null;
+    let cachedScaleX = 1;
+    let cachedScaleY = 1;
+
+    // 字体映射表
+    const fontMap = {
+      'Noto Sans SC': "'Noto Sans SC', sans-serif",
+      'Noto Serif SC': "'Noto Serif SC', serif",
+      'LXGW WenKai Screen': "'LXGW WenKai Screen', serif",
+      'ZCOOL KuaiLe': "'ZCOOL KuaiLe', cursive",
+      'Ma Shan Zheng': "'Ma Shan Zheng', cursive",
+      'Long Cang': "'Long Cang', cursive",
+      'ZCOOL QingKe HuangYou': "'ZCOOL QingKe HuangYou', sans-serif",
+      'Zhi Mang Xing': "'Zhi Mang Xing', cursive",
+      'Liu Jian Mao Cao': "'Liu Jian Mao Cao', cursive",
+      'ZCOOL XiaoWei': "'ZCOOL XiaoWei', serif",
+      'Yuji Syuku': "'Yuji Syuku', serif",
+      'DotGothic16': "'DotGothic16', sans-serif",
+      'Reggae One': "'Reggae One', cursive"
+    };
+
+    // 预设颜色盘
+    const PRESET_COLORS = [
+      '#ffffff', '#000000', '#1f2937',
+      '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e',
+      '#78716c', '#a8a29e', '#d6d3d1'
+    ];
+
+    /* --- DB --- */
+    const DB_NAME = 'PhotoEditorDB';
+    const STORE_NAME = 'projects';
+
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = (e) => reject(e);
+      });
+    }
+
+    async function saveToDB(imageData, textData) {
+      const db = await initDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        store.put({ id: 'latest', image: imageData, texts: textData, timestamp: Date.now() });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject();
+      });
+    }
+
+    async function loadFromDB() {
+      const db = await initDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.get('latest');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject();
+      });
+    }
+
+    async function checkHasSave() {
+      try {
+        const data = await loadFromDB();
+        if (data) {
+          loadBtn.classList.remove('hidden');
+          const timeStr = new Date(data.timestamp).getHours() + ':' + String(new Date(data.timestamp).getMinutes()).padStart(2, '0');
+          loadBtn.querySelector('span').innerText = `恢复 ${timeStr}`;
+        }
+      } catch (e) { console.log('No save found'); }
+    }
+
+    /* --- 初始化 --- */
+    window.onload = function () {
+      renderColorPresets(); // 渲染新色盘
+      checkHasSave();
+      startRenderLoop();
+
+      // 优化触摸事件处理，修复滑块卡顿问题
+      document.body.addEventListener('touchmove', function (e) {
+        // 如果是在横向滚动区域，允许默认行为
+        if (e.target.closest('.scroll-x-container')) return; 
+        
+        // 关键修复：如果是 Range 滑块，明确允许默认行为，防止与浏览器手势冲突
+        if (e.target.tagName === 'INPUT' && e.target.type === 'range') return;
+
+        // 仅在非图片区域（且非上述例外区域）阻止滚动，防止整个页面被拖动
+        if (!e.target.closest('#image-viewport')) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    };
+
+    function startRenderLoop() {
+      if (!animationFrameId) {
+        renderLoop();
+      }
+    }
+
+    function renderLoop() {
+      if (isDirty && imageLoaded) {
+        drawTextsOnly();
+        isDirty = false;
+      }
+      animationFrameId = requestAnimationFrame(renderLoop);
+    }
+
+    function requestDraw() {
+      isDirty = true;
+    }
+
+    /* --- 图片处理 --- */
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      showToast("正在加载高清图片...");
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        loadImage(e.target.result);
+      }
+      reader.readAsDataURL(file);
+    }
+
+    function loadImage(src, savedTexts = []) {
+      baseImage = new Image();
+      baseImage.src = src;
+      baseImage.onload = function () {
+        const w = baseImage.naturalWidth;
+        const h = baseImage.naturalHeight;
+
+        const dpr = window.devicePixelRatio || 1;
+        const screenW = window.innerWidth * dpr;
+
+        let targetScale = 1;
+
+        if (w > MAX_CANVAS_SIZE || h > MAX_CANVAS_SIZE) {
+          targetScale = Math.min(MAX_CANVAS_SIZE / w, MAX_CANVAS_SIZE / h);
+        }
+
+        if (w * targetScale < screenW) {
+          const upscaleFactor = Math.min(screenW / w, 3);
+          if (upscaleFactor > targetScale) {
+            targetScale = upscaleFactor;
+          }
+        }
+
+        renderScale = targetScale;
+
+        const displayW = Math.round(w * renderScale);
+        const displayH = Math.round(h * renderScale);
+
+        bgCanvas.width = displayW;
+        bgCanvas.height = displayH;
+        textCanvas.width = displayW;
+        textCanvas.height = displayH;
+
+        bgCtx.imageSmoothingEnabled = true;
+        bgCtx.imageSmoothingQuality = 'high';
+        textCtx.imageSmoothingEnabled = true;
+        textCtx.imageSmoothingQuality = 'high';
+
+        imageLoaded = true;
+
+        welcomeMsg.classList.add('hidden');
+        container.classList.remove('hidden');
+        container.classList.remove('scale-95', 'opacity-0');
+        container.classList.add('scale-100', 'opacity-100');
+
+        texts = savedTexts.length > 0 ? savedTexts : [];
+        selectedTextId = null;
+        updateDeleteBtn();
+
+        bgCtx.drawImage(baseImage, 0, 0, w, h, 0, 0, displayW, displayH);
+
+        requestDraw();
+        saveProgress();
+      }
+    }
+
+    /* --- 绘图 (带缩放) --- */
+    function drawTextsOnly() {
+      textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+      textCtx.save();
+      textCtx.scale(renderScale, renderScale);
+
+      texts.forEach(item => {
+        if (item._hidden) return;
+
+        textCtx.save();
+        const fontSize = item.size;
+        textCtx.font = `${fontSize}px ${fontMap[item.font] || 'sans-serif'}`;
+        textCtx.fillStyle = item.color;
+        textCtx.textBaseline = 'middle';
+        textCtx.textAlign = 'center';
+
+        textCtx.lineJoin = 'round';
+        textCtx.miterLimit = 2;
+
+        if (!isDragging) {
+          textCtx.shadowColor = "rgba(0,0,0,0.3)";
+          textCtx.shadowBlur = fontSize * 0.1;
+          textCtx.shadowOffsetX = fontSize * 0.05;
+          textCtx.shadowOffsetY = fontSize * 0.05;
+        } else {
+          textCtx.shadowColor = "transparent";
+          textCtx.shadowBlur = 0;
+          textCtx.shadowOffsetX = 0;
+          textCtx.shadowOffsetY = 0;
+        }
+
+        textCtx.fillText(item.text, item.x, item.y);
+
+        if (item.id === selectedTextId) {
+          const metrics = textCtx.measureText(item.text);
+          const textWidth = metrics.width;
+          const textHeight = fontSize * 1.2;
+
+          textCtx.shadowColor = "transparent";
+          textCtx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+          textCtx.lineWidth = Math.max(3, baseImage.naturalWidth * 0.004);
+          textCtx.setLineDash([10, 8]);
+          textCtx.strokeRect(item.x - textWidth / 2 - fontSize * 0.2, item.y - textHeight / 2, textWidth + fontSize * 0.4, textHeight);
+
+          textCtx.strokeStyle = "#4f46e5";
+          textCtx.lineWidth = Math.max(1.5, baseImage.naturalWidth * 0.002);
+          textCtx.setLineDash([]);
+          textCtx.strokeRect(item.x - textWidth / 2 - fontSize * 0.2, item.y - textHeight / 2, textWidth + fontSize * 0.4, textHeight);
+        }
+        textCtx.restore();
+      });
+
+      textCtx.restore();
+    }
+
+    /* --- 文本操作 --- */
+    function addText() {
+      if (!imageLoaded) return showToast("请先选择图片");
+
+      const input = document.getElementById('textInput');
+      const content = input.value.trim();
+      if (!content) return showToast("请输入文字内容");
+
+      // 核心修改：不再依赖屏幕中心，而是依赖“图片视口容器”的中心
+      // 1. 获取图片视口容器 (盒子1) 的边界
+      const viewportRect = viewport.getBoundingClientRect();
+      
+      // 2. 计算视口的视觉中心点坐标 (屏幕坐标系)
+      const viewportCenterX = viewportRect.left + viewportRect.width / 2;
+      const viewportCenterY = viewportRect.top + viewportRect.height / 2;
+
+      // 3. 获取 Canvas 在页面中的实际位置
+      const canvasRect = textCanvas.getBoundingClientRect();
+
+      // 4. 计算中心点相对于 Canvas 左上角的偏移 (CSS 像素)
+      // 如果图片很大需要滚动，这个偏移量会自动考虑滚动的距离
+      const domX = viewportCenterX - canvasRect.left;
+      const domY = viewportCenterY - canvasRect.top;
+
+      // 5. 将 CSS 像素映射回 Canvas 内部的原始分辨率坐标
+      const rawX = domX * (baseImage.naturalWidth / canvasRect.width);
+      const rawY = domY * (baseImage.naturalHeight / canvasRect.height);
+
+      // 6. 安全边界限制，防止文字飞出图片太远
+      const rawW = baseImage.naturalWidth;
+      const rawH = baseImage.naturalHeight;
+      const safeX = Math.max(rawW * 0.1, Math.min(rawW * 0.9, rawX));
+      const safeY = Math.max(rawH * 0.1, Math.min(rawH * 0.9, rawY));
+
+      const newText = {
+        id: Date.now(),
+        text: content,
+        x: safeX,
+        y: safeY,
+        color: PRESET_COLORS[0], // 默认白色
+        size: Math.max(50, rawW / 20),
+        font: 'Noto Sans SC'
+      };
+
+      texts.push(newText);
+      selectText(newText.id);
+
+      input.value = '';
+      input.blur();
+      requestDraw();
+      saveProgress();
+      showToast("添加成功，拖动可调整位置");
+    }
+
+    function selectText(id) {
+      selectedTextId = id;
+      const item = texts.find(t => t.id === id);
+      if (item) {
+        updateColorUI(item.color);
+        document.getElementById('sizeSlider').value = item.size;
+        document.getElementById('sizeInput').value = item.size;
+      }
+      updateDeleteBtn();
+      requestDraw();
+    }
+
+    /* --- 交互事件 --- */
+    function updateLayoutCache() {
+      cachedRect = textCanvas.getBoundingClientRect();
+      cachedScaleX = textCanvas.width / cachedRect.width;
+      cachedScaleY = textCanvas.height / cachedRect.height;
+    }
+
+    function getCanvasCoordinates(clientX, clientY) {
+      if (!cachedRect) updateLayoutCache();
+
+      const canvasX = (clientX - cachedRect.left) * cachedScaleX;
+      const canvasY = (clientY - cachedRect.top) * cachedScaleY;
+
+      return {
+        x: canvasX / renderScale,
+        y: canvasY / renderScale
+      };
+    }
+
+    function isHit(item, x, y) {
+      textCtx.save();
+      textCtx.font = `${item.size}px ${fontMap[item.font] || 'sans-serif'}`;
+      const metrics = textCtx.measureText(item.text);
+      const w = metrics.width;
+      const h = item.size;
+      textCtx.restore();
+      return (x >= item.x - w / 2 * 1.3 && x <= item.x + w / 2 * 1.3 &&
+        y >= item.y - h / 2 * 1.3 && y <= item.y + h / 2 * 1.3);
+    }
+
+    function handleStart(clientX, clientY) {
+      if (!imageLoaded) return false;
+      updateLayoutCache();
+      const pos = getCanvasCoordinates(clientX, clientY);
+
+      for (let i = texts.length - 1; i >= 0; i--) {
+        if (isHit(texts[i], pos.x, pos.y)) {
+          selectText(texts[i].id);
+          isDragging = true;
+          dragStartOffset = { x: pos.x - texts[i].x, y: pos.y - texts[i].y };
+          return true;
+        }
+      }
+
+      if (selectedTextId) {
+        selectedTextId = null;
+        updateDeleteBtn();
+        requestDraw();
+      }
+      return false;
+    }
+
+    function handleMove(clientX, clientY) {
+      if (!isDragging || !selectedTextId) return;
+      const pos = getCanvasCoordinates(clientX, clientY);
+      const item = texts.find(t => t.id === selectedTextId);
+      if (item) {
+        item.x = pos.x - dragStartOffset.x;
+        item.y = pos.y - dragStartOffset.y;
+        requestDraw();
+      }
+    }
+
+    function handleEnd() {
+      if (isDragging) {
+        saveProgress();
+      }
+      isDragging = false;
+    }
+
+    textCanvas.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+    window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+    window.addEventListener('mouseup', handleEnd);
+
+    textCanvas.addEventListener('touchstart', e => {
+      if (handleStart(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault();
+    }, { passive: false });
+    window.addEventListener('touchmove', e => {
+      if (isDragging) {
+        e.preventDefault();
+        e.preventDefault(); 
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+
+    window.addEventListener('resize', () => { cachedRect = null; });
+
+    /* --- 属性修改 (颜色) --- */
+    function renderColorPresets() {
+      const container = document.getElementById('color-presets');
+      PRESET_COLORS.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'w-10 h-10 rounded-lg cursor-pointer shadow-sm shrink-0 border border-slate-200 color-swatch snap-start'; // 更改为圆角矩形
+        div.style.backgroundColor = c;
+        div.dataset.color = c;
+        div.onclick = () => {
+          document.getElementById('colorPicker').value = c;
+          changeColor(c);
+        };
+        container.appendChild(div);
+      });
+    }
+
+    function updateColorUI(val) {
+      document.querySelectorAll('.color-swatch').forEach(dot => {
+        if (dot.dataset.color && dot.dataset.color.toLowerCase() === val.toLowerCase()) {
+          dot.classList.add('active');
+          dot.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+    }
+
+    function changeColor(val) {
+      updateColorUI(val);
+      if (selectedTextId) {
+        const item = texts.find(t => t.id === selectedTextId);
+        if (item) { item.color = val; requestDraw(); saveProgress(); }
+      }
+    }
+
+    // -----------------------------------------------------------
+    // 超级平滑缩放方案：DOM 代理预览 (DOM Proxy Preview) + RAF 优化
+    // -----------------------------------------------------------
+
+    let rafId = null;
+
+    function handleSizeInput(val) {
+      document.getElementById('sizeInput').value = val;
+
+      // 使用 requestAnimationFrame 防抖，避免高频触发导致卡顿
+      if (rafId) return;
+
+      rafId = requestAnimationFrame(() => {
+        updatePreviewSize(val);
+        rafId = null;
+      });
+    }
+
+    function updatePreviewSize(val) {
+      if (!selectedTextId) return;
+      const item = texts.find(t => t.id === selectedTextId);
+      if (!item) return;
+
+      if (previewLayer.classList.contains('hidden') || !item._hidden) {
+        updateLayoutCache(); 
+        item._hidden = true;
+        requestDraw();
+        previewLayer.classList.remove('hidden');
+      }
+
+      const fontSize = parseInt(val);
+      
+      const domX = (item.x * renderScale) / cachedScaleX;
+      const domY = (item.y * renderScale) / cachedScaleY;
+      const domSize = (fontSize * renderScale) / cachedScaleX;
+
+      previewText.innerText = item.text;
+      previewText.style.fontFamily = fontMap[item.font] || 'sans-serif';
+      previewText.style.fontSize = `${domSize}px`;
+      previewText.style.color = item.color;
+      previewText.style.left = `${domX}px`;
+      previewText.style.top = `${domY}px`;
+      previewText.style.textShadow = `rgba(0,0,0,0.3) ${domSize*0.05}px ${domSize*0.05}px ${domSize*0.1}px`;
+    }
+
+    function handleSizeChange(val) {
+      changeSize(val); 
+      
+      if (selectedTextId) {
+        const item = texts.find(t => t.id === selectedTextId);
+        if (item) {
+          item._hidden = false;
+        }
+      }
+      
+      previewLayer.classList.add('hidden'); 
+      requestDraw(); 
+      saveProgress();
+    }
+
+    function changeSize(val) {
+      const sizeVal = parseInt(val);
+      const slider = document.getElementById('sizeSlider');
+      const input = document.getElementById('sizeInput');
+      
+      if (slider.value != sizeVal) slider.value = sizeVal;
+      if (input.value != sizeVal) input.value = sizeVal;
+
+      if (selectedTextId) {
+        const item = texts.find(t => t.id === selectedTextId);
+        if (item) { 
+          item.size = sizeVal; 
+        }
+      }
+    }
+
+    function changeFont(font, name) {
+      if (selectedTextId) {
+        const item = texts.find(t => t.id === selectedTextId);
+        if (item) {
+          item.font = font;
+          document.fonts.load(`100px ${font}`).then(() => requestDraw());
+          requestDraw();
+          saveProgress();
+          showToast(`已切换为：${name}`);
+        }
+      } else {
+        showToast("请先点击文字选中");
+      }
+    }
+
+    function deleteSelectedText() {
+      if (selectedTextId) {
+        texts = texts.filter(t => t.id !== selectedTextId);
+        selectedTextId = null;
+        updateDeleteBtn();
+        requestDraw();
+        saveProgress();
+        showToast("已删除");
+      }
+    }
+
+    function updateDeleteBtn() {
+      if (selectedTextId) deleteBtn.classList.remove('hidden');
+      else deleteBtn.classList.add('hidden');
+    }
+
+    /* --- 存取进度 --- */
+    async function saveProgress() {
+      if (!imageLoaded) return;
+      if (window.saveTimer) clearTimeout(window.saveTimer);
+      window.saveTimer = setTimeout(async () => {
+        try {
+          await saveToDB(baseImage.src, texts);
+          checkHasSave();
+        } catch (e) { console.error("Save failed", e); }
+      }, 1000);
+    }
+
+    function saveProgressManual() {
+      if (!imageLoaded) return showToast("没有什么可保存的");
+      saveToDB(baseImage.src, texts).then(() => {
+        showToast("进度已保存到本地");
+        checkHasSave();
+      });
+    }
+
+    async function loadProgress() {
+      try {
+        showToast("正在恢复...");
+        const data = await loadFromDB();
+        if (data) {
+          loadImage(data.image, data.texts);
+          showToast("恢复成功！");
+        }
+      } catch (e) {
+        showToast("没有找到存档");
+      }
+    }
+
+    /* --- 导出 --- */
+    function exportImage() {
+      if (!imageLoaded) return;
+
+      const loading = document.getElementById('loading-overlay');
+      loading.classList.remove('hidden');
+
+      setTimeout(() => {
+        try {
+          const exportCanvas = document.createElement('canvas');
+          exportCanvas.width = baseImage.naturalWidth;
+          exportCanvas.height = baseImage.naturalHeight;
+          const eCtx = exportCanvas.getContext('2d');
+
+          eCtx.imageSmoothingEnabled = true;
+          eCtx.imageSmoothingQuality = 'high';
+
+          eCtx.drawImage(baseImage, 0, 0);
+
+          texts.forEach(item => {
+            eCtx.save();
+            const fontSize = item.size;
+            eCtx.font = `${fontSize}px ${fontMap[item.font] || 'sans-serif'}`;
+            eCtx.fillStyle = item.color;
+            eCtx.textBaseline = 'middle';
+            eCtx.textAlign = 'center';
+
+            eCtx.shadowColor = "rgba(0,0,0,0.3)";
+            eCtx.shadowBlur = fontSize * 0.1;
+            eCtx.shadowOffsetX = fontSize * 0.05;
+            eCtx.shadowOffsetY = fontSize * 0.05;
+
+            eCtx.fillText(item.text, item.x, item.y);
+            eCtx.restore();
+          });
+
+          const dataURL = exportCanvas.toDataURL('image/png', 1.0);
+          const link = document.createElement('a');
+          link.download = `art-text-${Date.now()}.png`;
+          link.href = dataURL;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          showToast("下载已开始");
+
+        } catch (e) {
+          console.error(e);
+          showToast("图片太大，内存不足");
+        } finally {
+          loading.classList.add('hidden');
+        }
+      }, 100);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').innerText = msg;
+      toast.classList.remove('opacity-0', 'translate-y-4');
+      setTimeout(() => toast.classList.add('opacity-0', 'translate-y-4'), 2500);
+    }
+
+    document.fonts.ready.then(() => {
+      if (imageLoaded) requestDraw();
+    });
+  </script>
+</body>
+
+</html>
