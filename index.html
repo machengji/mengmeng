@@ -212,6 +212,19 @@
     header {
       padding-top: max(1rem, env(safe-area-inset-top));
     }
+    
+    /* Tab 激活样式 */
+    .tab-active {
+      background-color: white;
+      color: #4f46e5; /* indigo-600 */
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+    .tab-inactive {
+      color: #64748b; /* slate-500 */
+    }
+    .tab-inactive:hover {
+      background-color: rgba(255, 255, 255, 0.5);
+    }
   </style>
 </head>
 
@@ -280,111 +293,96 @@
     </div>
   </main>
 
-  <!-- 盒子2：底部控制区域 (不再覆盖图片) -->
+  <!-- 盒子2：底部控制区域 (不再覆盖图片，高度压缩) -->
   <footer
     class="shrink-0 glass-panel rounded-t-3xl shadow-[0_-5px_25px_rgba(0,0,0,0.05)] relative z-50"
     id="controls">
-    <div class="max-w-md mx-auto w-full px-5 py-4 sm:pb-8">
+    <div class="max-w-md mx-auto w-full px-5 py-4">
 
-      <!-- 输入栏 -->
-      <div class="flex gap-3 mb-4 items-center">
+      <!-- 第一行：输入栏 -->
+      <div class="flex gap-3 mb-2 items-center">
         <div class="relative flex-1">
-          <!-- 修改点：添加 oninput 事件监听，实现选中文字后，打字即修改 -->
           <input type="text" id="textInput" placeholder="输入文字..." oninput="updateCurrentText(this.value)"
-            class="w-full bg-slate-100 border-none rounded-full px-4 py-3 text-base focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner outline-none">
+            class="w-full bg-slate-100 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner outline-none h-10">
         </div>
         <button onclick="addText()"
-          class="bg-indigo-600 text-white w-12 h-12 rounded-full shadow-lg shadow-indigo-200 active:bg-indigo-700 transition active:scale-95 flex items-center justify-center shrink-0">
-          <i data-lucide="plus" class="w-6 h-6"></i>
+          class="bg-indigo-600 text-white w-10 h-10 rounded-full shadow-lg shadow-indigo-200 active:bg-indigo-700 transition active:scale-95 flex items-center justify-center shrink-0">
+          <i data-lucide="plus" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <!-- 工具区 -->
-      <div id="tools-area" class="space-y-4 transition-opacity duration-300">
+      <!-- 第二行：Tab导航 + 删除按钮 -->
+      <div class="flex justify-between items-center mb-2 px-1">
+        <!-- Tabs -->
+        <div class="flex bg-slate-100 p-1 rounded-lg">
+          <button onclick="switchTab('color')" id="tab-color" class="tab-active px-3 py-1 text-xs font-bold rounded-md transition-all">颜色</button>
+          <button onclick="switchTab('font')" id="tab-font" class="tab-inactive px-3 py-1 text-xs font-bold rounded-md transition-all">字体</button>
+          <button onclick="switchTab('size')" id="tab-size" class="tab-inactive px-3 py-1 text-xs font-bold rounded-md transition-all">大小</button>
+        </div>
+        
+        <!-- Delete Button (Integrate into flow) -->
+        <button id="deleteBtn" onclick="deleteSelectedText()"
+          class="hidden bg-red-50 text-red-500 px-3 py-1 rounded-full text-xs font-bold border border-red-100 active:scale-90 transition flex items-center gap-1">
+          <i data-lucide="trash-2" class="w-3 h-3"></i> 删除
+        </button>
+      </div>
 
-        <!-- 颜色预设列表 -->
-        <div>
-          <div class="flex items-center justify-between mb-2 px-1">
-            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">颜色选择</label>
-          </div>
-          <div id="color-presets"
-            class="flex overflow-x-auto gap-4 py-3 px-4 -mx-2 scrollbar-hide snap-x scroll-x-container items-center">
-
+      <!-- 第三行：动态工具面板 (固定高度容器，防止跳动) -->
+      <div id="tool-panels" class="relative h-14 w-full">
+        
+        <!-- 面板1：颜色 (默认显示) -->
+        <div id="panel-color" class="absolute inset-0 w-full flex items-center">
+          <div id="color-presets" class="flex overflow-x-auto gap-4 py-1 px-1 -mx-1 scrollbar-hide snap-x scroll-x-container items-center w-full">
             <!-- 自定义颜色入口 -->
-            <div
-              class="relative w-10 h-10 rounded-full rainbow-bg shadow-md ring-2 ring-white overflow-hidden shrink-0 snap-start active:scale-90 transition-transform color-swatch"
-              id="custom-color-btn">
-              <input type="color" id="colorPicker" value="#ffffff" onchange="changeColor(this.value)"
-                class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer">
+            <div class="relative w-10 h-10 rounded-full rainbow-bg shadow-md ring-2 ring-white overflow-hidden shrink-0 snap-start active:scale-90 transition-transform color-swatch" id="custom-color-btn">
+              <input type="color" id="colorPicker" value="#ffffff" onchange="changeColor(this.value)" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer">
               <div class="absolute inset-2 bg-white/20 rounded-full pointer-events-none"></div>
             </div>
-
-            <div class="w-px h-6 bg-slate-300 shrink-0"></div>
-            <!-- JS 生成 -->
+            <div class="w-px h-6 bg-slate-300 shrink-0 mx-1"></div>
+            <!-- JS 生成颜色块 -->
           </div>
         </div>
 
-        <!-- 字体列表 -->
-        <div>
-          <div id="font-list"
-            class="flex overflow-x-auto gap-3 pb-2 -mx-1 px-1 scrollbar-hide snap-x scroll-x-container">
-            <button onclick="changeFont('Noto Sans SC', '黑体')"
-              class="snap-start font-noto-sans bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50 min-w-[4.5rem]">黑体</button>
-            <button onclick="changeFont('LXGW WenKai Screen', '霞鹜文楷')"
-              class="snap-start font-wenkai bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">霞鹜文楷</button>
-            <button onclick="changeFont('Noto Serif SC', '宋体')"
-              class="snap-start font-noto-serif bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">宋体</button>
-            <button onclick="changeFont('DotGothic16', '点阵体')"
-              class="snap-start font-pixel bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">像素点阵</button>
-            <button onclick="changeFont('Zhi Mang Xing', '行书')"
-              class="snap-start font-zhi-mang bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">志莽行书</button>
-            <button onclick="changeFont('Ma Shan Zheng', '毛笔')"
-              class="snap-start font-ma-shan bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">马善政</button>
-            <button onclick="changeFont('Liu Jian Mao Cao', '草书')"
-              class="snap-start font-liu-jian bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">流光毛草</button>
-            <button onclick="changeFont('ZCOOL XiaoWei', '小薇')"
-              class="snap-start font-xiao-wei bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">站酷小薇</button>
-            <button onclick="changeFont('Reggae One', '狮尾')"
-              class="snap-start font-reggae bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">狮尾重号</button>
-            <button onclick="changeFont('Long Cang', '龙由')"
-              class="snap-start font-long-cang bg-white border border-slate-200 px-4 py-2 rounded-xl text-lg whitespace-nowrap active:bg-indigo-50">龙由书</button>
-            <button onclick="changeFont('ZCOOL KuaiLe', '快乐')"
-              class="snap-start font-kuai-le bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">快乐体</button>
-            <button onclick="changeFont('ZCOOL QingKe HuangYou', '黄油')"
-              class="snap-start font-qing-ke bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">黄油体</button>
-            <button onclick="changeFont('Yuji Syuku', '日系')"
-              class="snap-start font-yuji bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm whitespace-nowrap active:bg-indigo-50">日系书体</button>
+        <!-- 面板2：字体 (默认隐藏) -->
+        <div id="panel-font" class="absolute inset-0 w-full flex items-center hidden">
+          <div id="font-list" class="flex overflow-x-auto gap-2 py-1 px-1 -mx-1 scrollbar-hide snap-x scroll-x-container w-full items-center">
+            <button onclick="changeFont('Noto Sans SC', '黑体')" class="snap-start font-noto-sans bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap active:bg-indigo-50 shrink-0">黑体</button>
+            <button onclick="changeFont('LXGW WenKai Screen', '霞鹜文楷')" class="snap-start font-wenkai bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap active:bg-indigo-50 shrink-0">霞鹜文楷</button>
+            <button onclick="changeFont('Noto Serif SC', '宋体')" class="snap-start font-noto-serif bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap active:bg-indigo-50 shrink-0">宋体</button>
+            <button onclick="changeFont('DotGothic16', '点阵体')" class="snap-start font-pixel bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap active:bg-indigo-50 shrink-0">像素</button>
+            <button onclick="changeFont('Zhi Mang Xing', '行书')" class="snap-start font-zhi-mang bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap active:bg-indigo-50 shrink-0">志莽</button>
+            <button onclick="changeFont('Ma Shan Zheng', '毛笔')" class="snap-start font-ma-shan bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap active:bg-indigo-50 shrink-0">马善政</button>
+            <button onclick="changeFont('Liu Jian Mao Cao', '草书')" class="snap-start font-liu-jian bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap active:bg-indigo-50 shrink-0">毛草</button>
+            <button onclick="changeFont('ZCOOL XiaoWei', '小薇')" class="snap-start font-xiao-wei bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap active:bg-indigo-50 shrink-0">小薇</button>
+            <button onclick="changeFont('Reggae One', '狮尾')" class="snap-start font-reggae bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap active:bg-indigo-50 shrink-0">狮尾</button>
+            <button onclick="changeFont('Long Cang', '龙由')" class="snap-start font-long-cang bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap active:bg-indigo-50 shrink-0">龙由</button>
+            <button onclick="changeFont('ZCOOL KuaiLe', '快乐')" class="snap-start font-kuai-le bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap active:bg-indigo-50 shrink-0">快乐</button>
+            <button onclick="changeFont('ZCOOL QingKe HuangYou', '黄油')" class="snap-start font-qing-ke bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap active:bg-indigo-50 shrink-0">黄油</button>
+            <button onclick="changeFont('Yuji Syuku', '日系')" class="snap-start font-yuji bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap active:bg-indigo-50 shrink-0">日系</button>
           </div>
         </div>
 
-        <!-- 大小控制 -->
-        <div class="bg-white/50 p-3 rounded-2xl border border-slate-100">
-          <div class="flex justify-between items-center mb-2">
-            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">字号大小</label>
-            <div class="flex items-center bg-white rounded-lg border border-slate-200 px-2 py-1 shadow-sm">
-              <input type="number" id="sizeInput" value="100" min="10" max="600" onchange="changeSize(this.value)"
-                onkeydown="if(event.key === 'Enter') changeSize(this.value)"
-                class="w-12 text-center text-sm font-mono text-indigo-600 outline-none bg-transparent m-0 p-0 font-bold">
-              <span class="text-xs text-slate-400 ml-1">px</span>
-            </div>
+        <!-- 面板3：大小 (默认隐藏) -->
+        <div id="panel-size" class="absolute inset-0 w-full flex items-center justify-between gap-4 hidden bg-white/50 rounded-xl px-2">
+          <div class="flex items-center bg-white rounded-lg border border-slate-200 px-2 py-1 shadow-sm shrink-0">
+            <input type="number" id="sizeInput" value="100" min="10" max="600" onchange="changeSize(this.value)"
+              onkeydown="if(event.key === 'Enter') changeSize(this.value)"
+              class="w-10 text-center text-sm font-mono text-indigo-600 outline-none bg-transparent m-0 p-0 font-bold">
+            <span class="text-[10px] text-slate-400 ml-0.5">px</span>
           </div>
-          <div class="flex items-center gap-3">
-            <button onclick="adjustSize(-5)" class="w-8 h-8 flex items-center justify-center bg-white rounded-full border border-slate-200 shadow-sm text-slate-600 active:scale-90 transition">
+          <div class="flex items-center gap-2 flex-1">
+            <button onclick="adjustSize(-5)" class="w-8 h-8 flex items-center justify-center bg-white rounded-full border border-slate-200 shadow-sm text-slate-600 active:scale-90 transition shrink-0">
               <i data-lucide="minus" class="w-4 h-4"></i>
             </button>
             <input type="range" min="20" max="600" value="100" id="sizeSlider" oninput="handleSizeInput(this.value)"
-              onchange="handleSizeChange(this.value)" class="flex-1">
-            <button onclick="adjustSize(5)" class="w-8 h-8 flex items-center justify-center bg-white rounded-full border border-slate-200 shadow-sm text-slate-600 active:scale-90 transition">
+              onchange="handleSizeChange(this.value)" class="flex-1 min-w-0">
+            <button onclick="adjustSize(5)" class="w-8 h-8 flex items-center justify-center bg-white rounded-full border border-slate-200 shadow-sm text-slate-600 active:scale-90 transition shrink-0">
               <i data-lucide="plus" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
-      </div>
 
-      <button id="deleteBtn" onclick="deleteSelectedText()"
-        class="hidden absolute -top-12 right-4 bg-white text-red-500 px-4 py-2 rounded-full text-sm font-bold shadow-lg border border-red-100 active:scale-90 transition flex items-center gap-1.5">
-        <i data-lucide="trash-2" class="w-4 h-4"></i> 删除
-      </button>
+      </div>
     </div>
   </footer>
 
@@ -430,6 +428,7 @@
     let isDragging = false;
     let dragStartOffset = { x: 0, y: 0 };
     let imageLoaded = false;
+    let activeTab = 'color'; // 默认Tab
 
     // 渲染状态
     let isDirty = false;
@@ -521,6 +520,7 @@
       renderColorPresets(); // 渲染新色盘
       checkHasSave();
       startRenderLoop();
+      switchTab('color'); // 初始化默认 Tab
 
       // 优化触摸事件处理，修复滑块卡顿问题
       document.body.addEventListener('touchmove', function (e) {
@@ -536,6 +536,31 @@
         }
       }, { passive: false });
     };
+
+    /* --- Tab 切换逻辑 --- */
+    function switchTab(tabName) {
+      activeTab = tabName;
+      
+      // 更新 Tab 按钮样式
+      ['color', 'font', 'size'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tabName) {
+          btn.classList.remove('tab-inactive');
+          btn.classList.add('tab-active');
+        } else {
+          btn.classList.remove('tab-active');
+          btn.classList.add('tab-inactive');
+        }
+        
+        // 更新面板显示
+        const panel = document.getElementById(`panel-${t}`);
+        if (t === tabName) {
+          panel.classList.remove('hidden');
+        } else {
+          panel.classList.add('hidden');
+        }
+      });
+    }
 
     function startRenderLoop() {
       if (!animationFrameId) {
@@ -692,7 +717,6 @@
       const canvasRect = textCanvas.getBoundingClientRect();
 
       // 2. 计算可见的交集区域 (Visible Intersection)
-      // 这代表了“图片当前在视口中可见的那一部分”
       const visibleLeft = Math.max(viewportRect.left, canvasRect.left);
       const visibleTop = Math.max(viewportRect.top, canvasRect.top);
       const visibleRight = Math.min(viewportRect.right, canvasRect.right);
