@@ -403,6 +403,21 @@
     <span id="toast-msg" class="truncate">提示信息</span>
   </div>
 
+  <div id="ios-export-panel"
+    class="fixed inset-x-4 bottom-8 bg-white rounded-3xl shadow-2xl border border-slate-100 p-4 z-[80] hidden">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+        <i data-lucide="image" class="w-5 h-5"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="text-sm font-bold text-slate-800">图片已生成</div>
+        <div class="text-xs text-slate-500 mt-0.5">点击打开后，长按图片保存</div>
+      </div>
+      <button id="ios-export-open-btn"
+        class="bg-indigo-600 text-white px-4 py-2 rounded-full text-xs font-bold active:scale-95 transition shrink-0">打开图片</button>
+    </div>
+  </div>
+
   <script>
     lucide.createIcons();
 
@@ -1068,6 +1083,8 @@
       if (!imageLoaded) return;
 
       const loading = document.getElementById('loading-overlay');
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
       loading.classList.remove('hidden');
 
       setTimeout(() => {
@@ -1107,11 +1124,9 @@
 
             const fileName = `art-text-${Date.now()}.png`;
             const url = URL.createObjectURL(blob);
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
             if (isIOS) {
-              const opened = window.open(url, '_blank');
-              showToast(opened ? "图片已打开，请长按保存" : "请允许弹窗后重试");
+              showIOSExportPanel(url);
               setTimeout(() => URL.revokeObjectURL(url), 60000);
               return;
             }
@@ -1134,6 +1149,17 @@
           loading.classList.add('hidden');
         }
       }, 100);
+    }
+
+    function showIOSExportPanel(url) {
+      const panel = document.getElementById('ios-export-panel');
+      const button = document.getElementById('ios-export-open-btn');
+      panel.classList.remove('hidden');
+      button.onclick = () => {
+        window.open(url, '_blank');
+        panel.classList.add('hidden');
+      };
+      showToast("图片已生成，请点击打开图片");
     }
 
     function showToast(msg) {
