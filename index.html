@@ -1099,15 +1099,33 @@
             eCtx.restore();
           });
 
-          const dataURL = exportCanvas.toDataURL('image/png', 1.0);
-          const link = document.createElement('a');
-          link.download = `art-text-${Date.now()}.png`;
-          link.href = dataURL;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          exportCanvas.toBlob((blob) => {
+            if (!blob) {
+              showToast("导出失败，请重试");
+              return;
+            }
 
-          showToast("下载已开始");
+            const fileName = `art-text-${Date.now()}.png`;
+            const url = URL.createObjectURL(blob);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+            if (isIOS) {
+              const opened = window.open(url, '_blank');
+              showToast(opened ? "图片已打开，请长按保存" : "请允许弹窗后重试");
+              setTimeout(() => URL.revokeObjectURL(url), 60000);
+              return;
+            }
+
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+            showToast("下载已开始");
+          }, 'image/png', 1.0);
 
         } catch (e) {
           console.error(e);
